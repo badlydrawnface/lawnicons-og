@@ -3,23 +3,34 @@ package app.lawnchair.lawnicons.ui.destination
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.compose.composable
 import app.lawnchair.lawnicons.R
 import app.lawnchair.lawnicons.model.GitHubContributor
 import app.lawnchair.lawnicons.ui.components.ContributorRow
@@ -27,22 +38,35 @@ import app.lawnchair.lawnicons.ui.components.ContributorRowPlaceholder
 import app.lawnchair.lawnicons.ui.components.ExternalLinkRow
 import app.lawnchair.lawnicons.ui.components.core.LawniconsScaffold
 import app.lawnchair.lawnicons.ui.theme.LawniconsTheme
+import app.lawnchair.lawnicons.ui.util.Constants
 import app.lawnchair.lawnicons.ui.util.PreviewLawnicons
 import app.lawnchair.lawnicons.viewmodel.ContributorsUiState
 import app.lawnchair.lawnicons.viewmodel.ContributorsViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
+import kotlinx.serialization.Serializable
 
-const val CONTRIBUTOR_URL = "https://github.com/LawnchairLauncher/lawnicons/graphs/contributors"
+@Serializable
+data object Contributors
+
+fun NavGraphBuilder.contributorsDestination(
+    onBack: () -> Unit,
+    isExpandedScreen: Boolean,
+) {
+    composable<Contributors> {
+        Contributors(
+            onBack = onBack,
+            isExpandedScreen = isExpandedScreen,
+        )
+    }
+}
 
 @Composable
-fun Contributors(
+private fun Contributors(
     onBack: () -> Unit,
     isExpandedScreen: Boolean,
     modifier: Modifier = Modifier,
     contributorsViewModel: ContributorsViewModel = hiltViewModel(),
 ) {
-    val uiState by contributorsViewModel.uiState.collectAsState()
+    val uiState by contributorsViewModel.uiState.collectAsStateWithLifecycle()
     Contributors(
         uiState = uiState,
         onBack = onBack,
@@ -94,7 +118,7 @@ fun Contributors(
 
 @Composable
 private fun ContributorList(
-    contributors: ImmutableList<GitHubContributor>,
+    contributors: List<GitHubContributor>,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
@@ -110,6 +134,22 @@ private fun ContributorList(
                 last = true,
                 divider = false,
                 url = CONTRIBUTOR_URL,
+                startIcon = {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.github_foreground),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(24.dp),
+                        )
+                    }
+                },
             )
         }
         item {
@@ -138,7 +178,18 @@ private fun ContributorListPlaceholder(
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding,
+        userScrollEnabled = false,
     ) {
+        item {
+            ContributorRowPlaceholder(
+                first = true,
+                last = true,
+                divider = false,
+            )
+        }
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
         items(itemCount) {
             ContributorRowPlaceholder(
                 first = it == 0,
@@ -157,17 +208,18 @@ private fun ContributorListError(
     SideEffect {
         onBack()
         // we might be rate-limited, open the web ui instead
-        val website =
-            Uri.parse(CONTRIBUTOR_URL)
+        val website = Uri.parse(CONTRIBUTOR_URL)
         val intent = Intent(Intent.ACTION_VIEW, website)
         context.startActivity(intent)
     }
 }
 
+private const val CONTRIBUTOR_URL = "${Constants.GITHUB}/graphs/contributors"
+
 @PreviewLawnicons
 @Composable
 private fun ContributorsScreenPreview() {
-    val contributors = persistentListOf(
+    val contributors = listOf(
         GitHubContributor(
             id = 1,
             login = "Example",
@@ -201,7 +253,7 @@ private fun ContributorsScreenLoadingPreview() {
 @PreviewLawnicons
 @Composable
 private fun ContributorListPreview() {
-    val contributors = persistentListOf(
+    val contributors = listOf(
         GitHubContributor(
             id = 1,
             login = "Example",

@@ -8,7 +8,7 @@ application {
 }
 
 dependencies {
-    implementation("com.android.tools:sdk-common:31.3.2")
+    implementation("com.android.tools:sdk-common:31.8.2")
     implementation("org.dom4j:dom4j:2.1.4")
-    implementation("commons-io:commons-io:2.16.1")
+    implementation("commons-io:commons-io:2.18.0")
 }
